@@ -1,0 +1,29 @@
+{
+  "name": "lingquantoeagle",
+  "version": "1.0.0",
+  "description": "将零泉导出的素材包导入到 Eagle",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SmallZombie/LingQuanToEagle.git"
+  },
+  "keywords": [
+    "lingquan",
+    "eagle",
+    "import"
+  ],
+  "author": "SmallZombie",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/SmallZombie/LingQuanToEagle/issues"
+  },
+  "homepage": "https://github.com/SmallZombie/LingQuanToEagle#readme",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "pinyin-pro": "^3.25.0",
+    "tar": "^7.4.3"
+  }
+}
