@@ -18,7 +18,7 @@ if (FS.existsSync('output.eaglepack')) {
 }
 
 
-// 创建 `temp` 文件夹，如果存在就清空
+console.log('[!] 准备...');
 if (FS.existsSync('temp')) {
     FS.rmSync('temp', { recursive: true, force: true });
 }
@@ -28,10 +28,10 @@ FS.mkdirSync('temp/input');
 FS.mkdirSync('temp/output');
 const inputPath = PATH.join(__dirname, 'temp', 'input');
 const outputPath = PATH.join(__dirname, 'temp', 'output');
+console.log('[√] 准备完成');
 
 
-// FS.createReadStream('input.lqpack').pipe(TAR.extract('temp/input')).on('finish', () => console.log('fin'));
-console.log('[!] 开始解压...');
+console.log('\n[!] 开始解压...');
 FS.mkdirSync(inputPath, { recursive: true });
 TAR.x({
     file: 'input.lqpack',
@@ -53,27 +53,30 @@ console.log(`[√] 已找到 "${lQRootPath}"`);
 
 console.log('\n[!] 加载文件...');
 const f_eagle_pack = {
-    images: [],
-    folder: {
-        id: 'FROMLINGQUAN',
-        name: '从零泉导入',
-        description: '',
-        children: [],
-        modificationTime: new Date().getTime(),
-        pinyin: 'CONGLINGQUANDAORU'
-    }
+    images: []
 }
+
 const f_lq_info = require(PATH.join(lQRootPath, 'materialPackage', 'info.json'));
+if (f_lq_info.folders) f_eagle_pack.folder = {
+    id: guid(),
+    name: '从零泉导入',
+    description: '',
+    children: [],
+    modificationTime: new Date().getTime(),
+    pinyin: 'conglingquandaoru'
+}
 console.log('[√] 加载完成');
 
 
-console.log('\n[!] 转换文件夹...');
-// 老 id 与新 id 的对应关系
-const folderIdMap = new Map();
-for (const i of f_lq_info.folders) {
-    f_eagle_pack.folder.children.push(handleFolder(i, folderIdMap));
+// 老 ID 与新 ID 的对应关系
+const folderIDMap = new Map();
+if (f_lq_info.folders) {
+    console.log('\n[!] 转换文件夹...');
+    for (const i of f_lq_info.folders) {
+        f_eagle_pack.folder.children.push(handleFolder(i, folderIDMap));
+    }
+    console.log('[√] 转换完成');
 }
-console.log('[√] 转换完成');
 
 
 console.log('\n[!] 转换文件...');
@@ -81,17 +84,18 @@ const files = FS.readdirSync(PATH.join(lQRootPath, 'resources'));
 for (const i of files) {
     const lqData = require(PATH.join(lQRootPath, 'resources', i, '__info.json'));
     console.log('    ' + lqData.name);
+
     const eagleData = {
         id: guid(),
         name: lqData.name,
         size: lqData.size,
-        // 创建时间
+        // 创建日期
         btime: lqData.time,
-        // 修改时间
+        // 修改日期
         mtime: lqData.revisionTime,
         ext: lqData.ext,
         tags: lqData.tags,
-        folders: lqData.folders.map(v => folderIdMap.get(v)),
+        folders: f_lq_info.folders ? lqData.folders.map(v => folderIDMap.get(v)) : [],
         isDeleted: lqData.delete,
         url: lqData.url,
         annotation: lqData.note,
@@ -100,9 +104,11 @@ for (const i of files) {
         star: lqData.score,
         height: lqData.height,
         width: lqData.width,
+        lastModified: lqData.revisionTime,
         // 颜色和预览图导入后自动生成
         palettes: []
     }
+    console.log(eagleData);
 
     FS.mkdirSync(PATH.join(outputPath, eagleData.id + '.info'));
     FS.writeFileSync(PATH.join(outputPath, eagleData.id + '.info', 'metadata.json'), JSON.stringify(eagleData));
@@ -122,6 +128,31 @@ console.log('[√] 保存完成');
 
 
 console.log('\n[!] 压缩...');
+async function archiverAndClean() {
+    await new Promise(resolve => {
+        const output = FS.createWriteStream('output.eaglepack');
+        const zip = ARCHIVER('zip', {
+            zlib: { level: 9 },
+            forceLocalTime: true
+        });
+
+        output.on('close', resolve);
+        zip.on('error', e => {
+            console.log('[X] 压缩失败：' + e);
+            throw e;
+        });
+
+        zip.pipe(output);
+        zip.directory(outputPath, false);
+        zip.finalize();
+    });
+    console.log(`[√] 压缩完成 "${PATH.join(__dirname, 'output.eaglepack')}"`);
+
+
+    console.log('\n[!] 清理...');
+    FS.rmSync('temp', { recursive: true, force: true });
+    console.log('[√] 清理完成');
+}
 archiverAndClean();
 
 
@@ -165,27 +196,4 @@ function handleFolder(data, map) {
 /** 生成不重复的 ID */
 function guid() {
     return (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)).toUpperCase();
-}
-
-async function archiverAndClean() {
-    await new Promise(resolve => {
-        const output = FS.createWriteStream('output.eaglepack');
-        const zip = ARCHIVER('zip', { zlib: { level: 9 } });
-
-        output.on('close', resolve);
-        zip.on('error', e => {
-            console.log('[X] 压缩失败：' + e);
-            throw e;
-        });
-
-        zip.pipe(output);
-        zip.directory(outputPath, false);
-        zip.finalize();
-    });
-    console.log(`[√] 压缩完成 "${PATH.join(__dirname, 'output.eaglepack')}"`);
-
-
-    console.log('\n[!] 清理...');
-    FS.rmSync('temp', { recursive: true, force: true });
-    console.log('[√] 清理完成');
 }

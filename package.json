@@ -1,6 +1,6 @@
 {
   "name": "lingquantoeagle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "将零泉导出的素材包导入到 Eagle",
   "main": "index.js",
   "scripts": {
