@@ -108,7 +108,7 @@ for (const i of files) {
         // 颜色和预览图导入后自动生成
         palettes: []
     }
-    console.log(eagleData);
+    // console.log(eagleData);
 
     FS.mkdirSync(PATH.join(outputPath, eagleData.id + '.info'));
     FS.writeFileSync(PATH.join(outputPath, eagleData.id + '.info', 'metadata.json'), JSON.stringify(eagleData));
